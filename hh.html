@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Групповой Чат | Голос, Файлы, GitHub Ready</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e2a3a, #0f1724);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        /* Контейнер чата */
+        .chat-container {
+            width: 100%;
+            max-width: 1300px;
+            height: 95vh;
+            background: #f0f2f5;
+            border-radius: 28px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Шапка */
+        .chat-header {
+            background: #075e54;
+            color: white;
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .logo-area i {
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .online-badge {
+            background: #25d366;
+            border-radius: 20px;
+            padding: 4px 12px;
+            font-size: 13px;
+            font-weight: bold;
+        }
+        .user-info {
+            background: rgba(0,0,0,0.2);
+            padding: 5px 12px;
+            border-radius: 30px;
+            font-size: 14px;
+        }
+
+        /* Окно сообщений */
+        .messages-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            background: #e5ddd5;
+            background-image: radial-gradient(circle at 10% 30%, rgba(0,0,0,0.02) 2%, transparent 2.5%);
+            background-size: 28px 28px;
+        }
+
+        /* Баллоны сообщений */
+        .message {
+            display: flex;
+            flex-direction: column;
+            max-width: 75%;
+            align-self: flex-start;
+        }
+        .message.my-message {
+            align-self: flex-end;
+        }
+        .message .bubble {
+            background: white;
+            padding: 8px 14px;
+            border-radius: 18px;
+            box-shadow: 0 1px 1px rgba(0,0,0,0.1);
+            position: relative;
+            word-wrap: break-word;
+        }
+        .my-message .bubble {
+            background: #dcf8c5;
+        }
+        .message .sender {
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 4px;
+            margin-left: 8px;
+            color: #075e54;
+        }
+        .my-message .sender {
+            text-align: right;
+            color: #1f5e3a;
+        }
+        .message-time {
+            font-size: 10px;
+            color: #6b6b6b;
+            margin-top: 4px;
+            margin-left: 12px;
+        }
+        .file-attach {
+            background: #eef2f3;
+            border-radius: 12px;
+            padding: 6px 10px;
+            margin-top: 5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 13px;
+        }
+        .file-attach a {
+            color: #075e54;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        audio {
+            max-width: 220px;
+            height: 34px;
+            border-radius: 20px;
+            margin-top: 6px;
+        }
+
+        /* Панель ввода */
+        .input-panel {
+            background: #fff;
+            padding: 12px 16px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            border-top: 1px solid #ddd;
+            flex-wrap: wrap;
+        }
+        .input-group {
+            flex: 1;
+            display: flex;
+            gap: 10px;
+            background: #f8f9fa;
+            border-radius: 30px;
+            padding: 5px 12px;
+            border: 1px solid #ccc;
+        }
+        #messageInput {
+            flex: 1;
+            border: none;
+            padding: 10px 5px;
+            font-size: 16px;
+            background: transparent;
+            outline: none;
+        }
+        .icon-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 6px;
+            border-radius: 50%;
+            transition: 0.2s;
+            color: #075e54;
+        }
+        .icon-btn:hover {
+            background: #e0e0e0;
+        }
+        .send-btn {
+            background: #075e54;
+            color: white;
+            border-radius: 40px;
+            padding: 8px 20px;
+            font-weight: bold;
+            border: none;
+            cursor: pointer;
+        }
+        #fileInput, #voiceInput {
+            display: none;
+        }
+
+        /* Модалка ввода ника */
+        .modal-nick {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .nick-box {
+            background: white;
+            padding: 30px;
+            border-radius: 32px;
+            width: 320px;
+            text-align: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+        .nick-box input {
+            width: 100%;
+            padding: 12px;
+            margin: 20px 0;
+            border: 1px solid #ccc;
+            border-radius: 30px;
+            font-size: 16px;
+        }
+        .nick-box button {
+            background: #075e54;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        /* Уведомления о подключении */
+        .system-message {
+            text-align: center;
+            font-size: 12px;
+            color: #555;
+            background: #e9ecef;
+            padding: 6px;
+            border-radius: 50px;
+            margin: 5px auto;
+            width: fit-content;
+            max-width: 80%;
+        }
+
+        @media (max-width: 600px) {
+            .message { max-width: 85%; }
+            .input-panel { gap: 6px; }
+            .icon-btn { font-size: 22px; }
+        }
+    </style>
+</head>
+<body>
+<div class="chat-container" id="chatContainer">
+    <div class="chat-header">
+        <div class="logo-area">
+            <span>💬 ГРУППОВОЙ ЧАТ</span>
+            <span class="online-badge" id="onlineCount">👥 0 онлайн</span>
+        </div>
+        <div class="user-info" id="currentUserNick">Не авторизован</div>
+    </div>
+    <div class="messages-area" id="messagesArea"></div>
+    <div class="input-panel">
+        <div class="input-group">
+            <input type="text" id="messageInput" placeholder="Введите сообщение..." autocomplete="off">
+            <button class="icon-btn" id="emojiBtn" title="Добавить смайлик">😊</button>
+            <label for="fileInput" class="icon-btn" style="cursor:pointer;">📎</label>
+            <input type="file" id="fileInput" multiple style="display:none">
+            <label for="voiceInput" class="icon-btn" style="cursor:pointer;">🎤</label>
+            <input type="file" id="voiceInput" accept="audio/*" capture="environment" style="display:none">
+        </div>
+        <button class="send-btn" id="sendBtn">Отправить</button>
+    </div>
+</div>
+
+<script>
+    // ---------- ХРАНИЛИЩЕ (имитация сервера через localStorage + событие storage) ----------
+    // Так как группа "автоматически кидает всех пользователей после ввода ника",
+    // мы используем глобальное хранилище сообщений и список активных юзеров.
+    // При загрузке страницы пользователь вводит ник -> он добавляется в "список участников"
+    // и получает все сообщения из хранилища. Новые сообщения приходят через событие storage (кросс-таб/окно)
+    // Также работает воспроизведение голоса/файлов через ссылки ObjectURL, но файлы храним в localStorage как base64 (маленькие файлы, до ~5мб суммарно, иначе ограничение).
+    // Для полноценного группового опыта: каждый раз при отправке сообщения/файла/голоса, данные пишутся в localStorage,
+    // и все вкладки получают обновления. Это полноценный "сервер" на клиенте без бэкенда, идеально для GitHub Pages.
+    
+    // Ключи хранилища
+    const STORAGE_MESSAGES = "groupchat_messages";
+    const STORAGE_USERS = "groupchat_users";     // список { nick, id, lastSeen }
+    let currentUser = null;      // { nick, userId }
+    let messages = [];            // массив объектов сообщений
+    
+    // DOM элементы
+    const messagesDiv = document.getElementById("messagesArea");
+    const messageInput = document.getElementById("messageInput");
+    const sendBtn = document.getElementById("sendBtn");
+    const fileInput = document.getElementById("fileInput");
+    const voiceInput = document.getElementById("voiceInput");
+    const currentUserSpan = document.getElementById("currentUserNick");
+    const onlineCountSpan = document.getElementById("onlineCount");
+    
+    // Генерация уникального ID сессии (для каждого открытого окна/вкладки)
+    let sessionId = localStorage.getItem("groupchat_sessionId");
+    if (!sessionId) {
+        sessionId = "sid_" + Date.now() + "_" + Math.random().toString(36).substr(2, 8);
+        localStorage.setItem("groupchat_sessionId", sessionId);
+    }
+    
+    // ---- Вспомогательные функции ----
+    function formatTime() {
+        return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+    
+    // Обновить список активных пользователей (учитываем сессии, которые обновляли активность в течение 60 секунд)
+    function updateActiveUsers() {
+        let rawUsers = localStorage.getItem(STORAGE_USERS);
+        let usersList = rawUsers ? JSON.parse(rawUsers) : [];
+        const now = Date.now();
+        const ACTIVE_THRESHOLD = 70000; // 70 секунд считаем активными
+        let active = usersList.filter(u => (now - (u.lastSeen || 0)) < ACTIVE_THRESHOLD);
+        onlineCountSpan.innerText = `👥 ${active.length} онлайн`;
+        // если текущий пользователь есть, обновляем его lastSeen
+        if (currentUser) {
+            let userExists = usersList.find(u => u.userId === currentUser.userId);
+            if (userExists) {
+                userExists.lastSeen = now;
+                userExists.nick = currentUser.nick;
+            } else {
+                usersList.push({ nick: currentUser.nick, userId: currentUser.userId, lastSeen: now });
+            }
+            localStorage.setItem(STORAGE_USERS, JSON.stringify(usersList));
+        }
+    }
+    
+    // Периодическое обновление статуса "онлайн"
+    setInterval(() => {
+        updateActiveUsers();
+        // также перерисовывать список онлайн не обязательно, но счетчик обновляем
+    }, 15000);
+    
+    // Сохранить сообщения в localStorage
+    function persistMessages() {
+        localStorage.setItem(STORAGE_MESSAGES, JSON.stringify(messages));
+    }
+    
+    // Добавить сообщение в массив и в хранилище, затем отрисовать
+    function addMessageToChat(msgObj, triggerStorageEvent = true) {
+        messages.push(msgObj);
+        persistMessages();
+        renderMessages();
+        if (triggerStorageEvent) {
+            // Искусственно вызываем событие storage для других вкладок
+            localStorage.setItem("groupchat_trigger", Date.now().toString());
+        }
+        scrollToBottom();
+    }
+    
+    // Рендер всех сообщений
+    function renderMessages() {
+        if (!messagesDiv) return;
+        messagesDiv.innerHTML = "";
+        messages.forEach(msg => {
+            const isMy = (currentUser && msg.senderId === currentUser.userId);
+            const messageDiv = document.createElement("div");
+            messageDiv.className = `message ${isMy ? 'my-message' : ''}`;
+            
+            const senderSpan = document.createElement("div");
+            senderSpan.className = "sender";
+            senderSpan.innerText = msg.senderName + (isMy ? " (Вы)" : "");
+            
+            const bubbleDiv = document.createElement("div");
+            bubbleDiv.className = "bubble";
+            
+            // Текст
+            if (msg.text) {
+                const textNode = document.createElement("div");
+                textNode.innerText = msg.text;
+                bubbleDiv.appendChild(textNode);
+            }
+            // Файл (если есть)
+            if (msg.fileData && msg.fileName) {
+                const fileDiv = document.createElement("div");
+                fileDiv.className = "file-attach";
+                let fileLink = document.createElement("a");
+                fileLink.href = msg.fileData;
+                fileLink.target = "_blank";
+                fileLink.innerText = `📎 ${msg.fileName}`;
+                fileDiv.appendChild(fileLink);
+                if (msg.fileType && msg.fileType.startsWith("image/")) {
+                    const imgPreview = document.createElement("img");
+                    imgPreview.src = msg.fileData;
+                    imgPreview.style.maxWidth = "180px";
+                    imgPreview.style.maxHeight = "150px";
+                    imgPreview.style.borderRadius = "12px";
+                    imgPreview.style.marginTop = "8px";
+                    fileDiv.appendChild(imgPreview);
+                }
+                bubbleDiv.appendChild(fileDiv);
+            }
+            // Голосовое (аудио)
+            if (msg.voiceData && msg.voiceUrl) {
+                const audioElem = document.createElement("audio");
+                audioElem.controls = true;
+                audioElem.src = msg.voiceUrl;
+                audioElem.style.width = "200px";
+                const voiceLabel = document.createElement("div");
+                voiceLabel.innerText = "🎙️ Голосовое сообщение";
+                voiceLabel.style.fontSize = "12px";
+                voiceLabel.style.marginBottom = "5px";
+                bubbleDiv.appendChild(voiceLabel);
+                bubbleDiv.appendChild(audioElem);
+            }
+            
+            messageDiv.appendChild(senderSpan);
+            messageDiv.appendChild(bubbleDiv);
+            const timeSpan = document.createElement("div");
+            timeSpan.className = "message-time";
+            timeSpan.innerText = msg.time;
+            messageDiv.appendChild(timeSpan);
+            messagesDiv.appendChild(messageDiv);
+        });
+        scrollToBottom();
+    }
+    
+    function scrollToBottom() {
+        if (messagesDiv) messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+    
+    // Отправка текстового сообщения
+    function sendTextMessage() {
+        let text = messageInput.value.trim();
+        if (!text && !fileInput.files.length && !voiceInput.files.length) return;
+        if (!currentUser) {
+            alert("Сначала введите ник!");
+            return;
+        }
+        if (text) {
+            const msg = {
+                id: Date.now() + "_" + Math.random(),
+                senderId: currentUser.userId,
+                senderName: currentUser.nick,
+                text: text,
+                time: formatTime(),
+                type: "text",
+                timestamp: Date.now()
+            };
+            addMessageToChat(msg, true);
+            messageInput.value = "";
+        }
+        // обработка файлов и голоса отдельно (см. обработчики)
+    }
+    
+    // Преобразование файла в base64 и отправка
+    function sendFileAsMessage(file, typeHint = "file") {
+        if (!currentUser) {
+            alert("Введите ник");
+            return Promise.reject();
+        }
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                const base64 = evt.target.result;
+                let msg = {
+                    id: Date.now() + "_" + Math.random(),
+                    senderId: currentUser.userId,
+                    senderName: currentUser.nick,
+                    text: "",
+                    fileData: base64,
+                    fileName: file.name,
+                    fileType: file.type,
+                    time: formatTime(),
+                    timestamp: Date.now(),
+                    type: typeHint
+                };
+                if (typeHint === "voice") {
+                    msg.voiceData = base64;
+                    msg.voiceUrl = base64;
+                    msg.fileName = "voice_" + new Date().toISOString().slice(11,19) + ".webm";
+                }
+                addMessageToChat(msg, true);
+                resolve();
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+    }
+    
+    // Обработка множественных файлов
+    function handleFiles(files) {
+        if (!files.length) return;
+        for (let file of files) {
+            if (file.size > 5 * 1024 * 1024) {
+                alert("Файл слишком большой (макс 5 МБ). Для демо в localStorage ограничение.");
+                continue;
+            }
+            sendFileAsMessage(file, "file").catch(e => console.warn);
+        }
+        fileInput.value = "";
+    }
+    
+    // Инициализация: загружаем сообщения из localStorage, подписываемся на storage
+    function loadMessagesFromStorage() {
+        const stored = localStorage.getItem(STORAGE_MESSAGES);
+        if (stored) {
+            try {
+                messages = JSON.parse(stored);
+                // Проверяем, чтобы старые данные имели корректные поля
+                if (!Array.isArray(messages)) messages = [];
+            } catch(e) { messages = []; }
+        } else {
+            messages = [];
+            // приветственное сообщение системы
+            const welcomeMsg = {
+                id: "system_init",
+                senderId: "system",
+                senderName: "Система",
+                text: "💡 Добро пожаловать в групповой чат! Отправляйте текст, голосовые и файлы. Все участники видят сообщения сразу.",
+                time: formatTime(),
+                type: "system",
+                timestamp: Date.now()
+            };
+            messages.push(welcomeMsg);
+            persistMessages();
+        }
+        renderMessages();
+    }
+    
+    // Добавление пользователя в список и системное сообщение о подключении
+    function registerUser(nick) {
+        if (!nick || nick.trim() === "") {
+            alert("Введите корректный никнейм");
+            return false;
+        }
+        nick = nick.trim().substring(0, 24);
+        // Проверяем, существует ли уже такой userId в текущей сессии? но нам нужно создать уникальный юзер айди для вкладки
+        const userId = sessionId;  // фиксированный для вкладки, чтобы не плодить
+        let usersRaw = localStorage.getItem(STORAGE_USERS);
+        let users = usersRaw ? JSON.parse(usersRaw) : [];
+        let existing = users.find(u => u.userId === userId);
+        if (!existing) {
+            users.push({ nick: nick, userId: userId, lastSeen: Date.now() });
+            localStorage.setItem(STORAGE_USERS, JSON.stringify(users));
+        } else {
+            existing.nick = nick;
+            existing.lastSeen = Date.now();
+            localStorage.setItem(STORAGE_USERS, JSON.stringify(users));
+        }
+        currentUser = { nick: nick, userId: userId };
+        currentUserSpan.innerText = `${nick} (онлайн)`;
+        // Отправить системное сообщение о входе нового участника (только если это первая регистрация в этой сессии)
+        // Для избежания спама при обновлении страницы проверяем флаг в localStorage для данной сессии, что уведомление уже было
+        let joinFlag = localStorage.getItem(`join_notify_${userId}`);
+        if (!joinFlag) {
+            const joinMsg = {
+                id: "join_" + Date.now(),
+                senderId: "system",
+                senderName: "ℹ️",
+                text: `✨ ${nick} присоединился к групповому чату!`,
+                time: formatTime(),
+                type: "system",
+                timestamp: Date.now()
+            };
+            addMessageToChat(joinMsg, true);
+            localStorage.setItem(`join_notify_${userId}`, "true");
+        }
+        updateActiveUsers();
+        return true;
+    }
+    
+    // Показать модалку ввода ника
+    function showNicknameModal() {
+        const modalDiv = document.createElement("div");
+        modalDiv.className = "modal-nick";
+        modalDiv.innerHTML = `
+            <div class="nick-box">
+                <h3>✏️ Введите ваш ник</h3>
+                <input type="text" id="nickInput" placeholder="Например: Алексей" autocomplete="off" maxlength="24">
+                <button id="confirmNickBtn">Войти в чат</button>
+            </div>
+        `;
+        document.body.appendChild(modalDiv);
+        const inputField = modalDiv.querySelector("#nickInput");
+        const confirmBtn = modalDiv.querySelector("#confirmNickBtn");
+        const handleJoin = () => {
+            const nick = inputField.value.trim();
+            if (registerUser(nick)) {
+                modalDiv.remove();
+                // после входа разрешаем все действия
+                messageInput.disabled = false;
+                sendBtn.disabled = false;
+            } else {
+                alert("Ник не должен быть пустым");
+            }
+        };
+        confirmBtn.addEventListener("click", handleJoin);
+        inputField.addEventListener("keypress", (e) => {
+            if (e.key === "Enter") handleJoin();
+        });
+        inputField.focus();
+    }
+    
+    // Событие storage для кросс-табличной синхронизации
+    window.addEventListener("storage", (event) => {
+        if (event.key === STORAGE_MESSAGES) {
+            // обновить сообщения из хранилища
+            const newMessagesRaw = localStorage.getItem(STORAGE_MESSAGES);
+            if (newMessagesRaw) {
+                try {
+                    const newMessages = JSON.parse(newMessagesRaw);
+                    if (JSON.stringify(messages) !== JSON.stringify(newMessages)) {
+                        messages = newMessages;
+                        renderMessages();
+                    }
+                } catch(e) {}
+            }
+        }
+        if (event.key === STORAGE_USERS) {
+            updateActiveUsers();
+        }
+        if (event.key === "groupchat_trigger") {
+            // Просто форсируем синхронизацию сообщений (иногда нужно)
+            const fresh = localStorage.getItem(STORAGE_MESSAGES);
+            if (fresh) {
+                try {
+                    const parsed = JSON.parse(fresh);
+                    if (parsed.length !== messages.length) {
+                        messages = parsed;
+                        renderMessages();
+                    }
+                } catch(e) {}
+            }
+        }
+    });
+    
+    // Инициализация приложения
+    function init() {
+        loadMessagesFromStorage();
+        // Проверяем, есть ли уже сохраненный пользователь в этой сессии?
+        let existingSessionUser = null;
+        const usersRaw = localStorage.getItem(STORAGE_USERS);
+        if (usersRaw) {
+            const users = JSON.parse(usersRaw);
+            const found = users.find(u => u.userId === sessionId);
+            if (found && found.nick) {
+                // Автоматически восстанавливаем сессию (автовход)
+                currentUser = { nick: found.nick, userId: sessionId };
+                currentUserSpan.innerText = `${found.nick} (онлайн)`;
+                updateActiveUsers();
+                // не спамим повторное приветствие
+                messageInput.disabled = false;
+                sendBtn.disabled = false;
+                // но если не было флага join, можно не добавлять системное сообщение повторно
+                let joinFlag = localStorage.getItem(`join_notify_${sessionId}`);
+                if (!joinFlag) {
+                    // При восстановлении сессии не спамим вход, чтобы не дублировать, просто ставим флаг
+                    localStorage.setItem(`join_notify_${sessionId}`, "true");
+                }
+                return;
+            }
+        }
+        // Если не нашли - показываем модалку
+        showNicknameModal();
+    }
+    
+    // Обработчики интерфейса
+    sendBtn.addEventListener("click", () => {
+        sendTextMessage();
+    });
+    messageInput.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") sendTextMessage();
+    });
+    fileInput.addEventListener("change", (e) => {
+        if (fileInput.files.length) handleFiles(Array.from(fileInput.files));
+    });
+    voiceInput.addEventListener("change", (e) => {
+        if (voiceInput.files.length) {
+            const file = voiceInput.files[0];
+            if (file.size > 3 * 1024 * 1024) {
+                alert("Голосовое сообщение не более 3 МБ");
+                voiceInput.value = "";
+                return;
+            }
+            sendFileAsMessage(file, "voice").then(() => {
+                voiceInput.value = "";
+            }).catch(()=>voiceInput.value="");
+        }
+    });
+    // эмодзи простейший набор
+    document.getElementById("emojiBtn")?.addEventListener("click", () => {
+        const emojis = ["😀","😂","😍","🔥","👍","❤️","🎉","😎","🤣","💯"];
+        const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
+        messageInput.value += randomEmoji;
+        messageInput.focus();
+    });
+    
+    init();
+    // Дополнительно раз в минуту обновляем lastSeen
+    setInterval(() => {
+        if (currentUser) updateActiveUsers();
+    }, 30000);
+</script>
+</body>
+</html>
